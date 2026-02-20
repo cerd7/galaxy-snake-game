@@ -35,7 +35,7 @@ public class StartPanel extends JPanel
     private static final int BUTTON_X = 350;
     private static final int BUTTON_START_Y = 200;
     private static final int BUTTON_EXIT_Y = 280;
-    private static final int BUTTON_SPACING = 80;
+    // private static final int BUTTON_SPACING = 80;
 
     /**
      * Construtor Inicializa componentes visuais.
@@ -105,6 +105,7 @@ public class StartPanel extends JPanel
 
         gameStarted = true;
         buttonStart.setEnabled(false);
+        buttonExit.setEnabled(false);
 
         //Cria a janela e exibe o jogo.
         GameFrame gameFrame = new GameFrame();
