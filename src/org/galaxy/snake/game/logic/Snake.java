@@ -73,7 +73,7 @@ public class Snake
          * Move o corpo de trás para frente.
          * Começamos do último segmento para não sobrescrever as posições.
          */
-        for (int i = body.size() - 1; i >= 0; i--) 
+        for (int i = body.size() - 1; i > 0; i--) 
         {
             Tile current = body.get(i);
             Tile previous = body.get(i - 1);
@@ -106,16 +106,16 @@ public class Snake
     /**
      * Reseta a cobra para o estado inicial.
      */
-    public void reset(){
-        //Reposiciona a cabeça.
-        lasTailPosition = new Tile(head);
+    public void reset(){        
+        //para o movimento.
+        velocityX = 0;
+        velocityY = 0;
 
         //remove todos os segmentos do corpo.
         body.clear();
 
-        //para o movimento.
-        velocityX = 0;
-        velocityY = 0;
+        //Reposiciona a cabeça.
+        lasTailPosition = new Tile(head);
     }
 
     /**
