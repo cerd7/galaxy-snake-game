@@ -4,6 +4,8 @@ import org.galaxy.snake.game.core.GameConstants;
 import org.galaxy.snake.game.logic.Game;
 import org.galaxy.snake.game.logic.Events;
 import org.galaxy.snake.game.logic.Tile;
+import org.galaxy.snake.game.ui.Assets;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -26,6 +28,7 @@ public class GamePanel extends JPanel implements Game.GameListener{
     //<=== COMPONENTES ===>
     private final Events events;
     private final Game game;
+    private final Assets assets;
     private final JButton pauseButton;
 
     //<=== TIMERS ===>
@@ -53,6 +56,9 @@ public class GamePanel extends JPanel implements Game.GameListener{
         game = new Game();
         events = new Events(game);
         addKeyListener(events);
+
+        //Obtém singleton de assets uma vez no construtor
+        assets = Assets.getInstance();
 
         //Registra como listener do jogo.
         events.getGame().setGameListener(this);
@@ -86,7 +92,7 @@ public class GamePanel extends JPanel implements Game.GameListener{
      */
     private JButton createPauseButton(){
         JButton button = new JButton("PAUSE");
-        button.setFont(events.getGame().getAssets().getFont1());
+        button.setFont(assets.getFont1());
         button.setBackground(Color.YELLOW);
         button.setForeground(Color.BLACK);
         button.setBounds(10,13,300,50);
@@ -107,7 +113,7 @@ public class GamePanel extends JPanel implements Game.GameListener{
             //Jogo pausado
             renderTimer.stop();
             gameTimer.stop();
-            events.getGame().getSounds().stopBackgroundMusic();
+            game.getSounds().stopBackgroundMusic();
 
             //Atualiza o visual do botão.
             pauseButton.setText("CONTINUE");
@@ -117,7 +123,7 @@ public class GamePanel extends JPanel implements Game.GameListener{
             //Retomar a jogo
             renderTimer.start();
             gameTimer.start();
-            events.getGame().getSounds().playBackgroundMusic();
+            game.getSounds().stopBackgroundMusic();
 
             //Restaura o visual do botão.
             pauseButton.setText("PAUSE");
@@ -135,7 +141,7 @@ public class GamePanel extends JPanel implements Game.GameListener{
      * Atualiza a lógica do jogo e repinta.
      */
     private void handleRenderTick(ActionEvent e){
-        events.getGame().updateGame();
+        game.updateGame();
         repaint();
 
         //Verifica o gameOver.
@@ -149,7 +155,7 @@ public class GamePanel extends JPanel implements Game.GameListener{
      * Move a cobra e ajusta a velocidade com base no boost.
      */
     private void handleGameTick(ActionEvent e){
-        events.getGame().updateSnakeMove();
+        game.updateSnakeMove();
 
         //Ajusta a velocidade com base no boost
         int newDelay = events.getCurrentDelay();
@@ -191,8 +197,9 @@ public class GamePanel extends JPanel implements Game.GameListener{
         // Callback quando o jogo é reiniciado.
         gameOverDialogShown = false;
         events.resetBoost();
+        assets.resetBackground();
         gameTimer.setDelay(GameConstants.TIMER_SNAKE_NORMAL);
-        events.getGame().getAssets().resetBackground();
+        
 
         //Reinicia os timers.
         renderTimer.start();
@@ -210,8 +217,13 @@ public class GamePanel extends JPanel implements Game.GameListener{
 
     @Override
     public void onRequestExit() {
-        events.getGame().dispose();
+        game.dispose();
         System.exit(0);
+    }
+
+    @Override
+    public void onScoreChanged(int score){
+        assets.updateBackgroundByScore(score);
     }
 
     /**
@@ -245,7 +257,7 @@ public class GamePanel extends JPanel implements Game.GameListener{
      * Desenha o background do jogo.
      */
     private void drawBackground(Graphics2D g2){
-        Image background = events.getGame().getAssets().getBackgroundImageGame();
+        Image background = assets.getBackgroundImageGame();
         if(background != null){
             g2.drawImage(background, 0, 0, GameConstants.SCREEN_WIDTH, GameConstants.SCREEN_HEIGHT, null);
         }
@@ -255,8 +267,8 @@ public class GamePanel extends JPanel implements Game.GameListener{
      * Desenha a nave (comida).
      */
     private void drawNave(Graphics2D g2){
-        Tile navePos = events.getGame().getNave().getPosition();
-        Image naveImage = events.getGame().getAssets().getNaveImg();
+        Tile navePos = game.getNave().getPosition();
+        Image naveImage = assets.getNaveImg();
 
         if(naveImage != null){
             int x = navePos.getX() * GameConstants.TILE_SIZE;
@@ -273,13 +285,13 @@ public class GamePanel extends JPanel implements Game.GameListener{
         g2.setColor(Color.WHITE);
 
         //Desenha cobeça
-        Tile head = events.getGame().getSnake().getHead();
+        Tile head = game.getSnake().getHead();
         int headX = head.getX() * GameConstants.TILE_SIZE;
         int headY = head.getY() * GameConstants.TILE_SIZE;
         g2.fillRect(headX, headY, GameConstants.SNAKE_TILE_SIZE, GameConstants.SNAKE_TILE_SIZE);
 
         //Desenhar o corpo
-        for(Tile part : events.getGame().getSnake().getBodyReadOnly()){
+        for(Tile part : game.getSnake().getOccupiedPositions()){
             int partX = part.getX() * GameConstants.TILE_SIZE;
             int partY = part.getY() * GameConstants.TILE_SIZE;
             g2.fillRect(partX, partY, GameConstants.SNAKE_TILE_SIZE, GameConstants.SNAKE_TILE_SIZE);
@@ -304,9 +316,9 @@ public class GamePanel extends JPanel implements Game.GameListener{
      */
     private void drawScore(Graphics2D g2){
         g2.setColor(Color.WHITE);
-        g2.setFont(events.getGame().getAssets().getFont1());
+        g2.setFont(assets.getFont1());
 
-        int score = events.getGame().getSnake().getScore();
+        int score = game.getSnake().getScore();
         g2.drawString("SCORE: " + score, 430, 50);
     }
 
@@ -315,7 +327,7 @@ public class GamePanel extends JPanel implements Game.GameListener{
      */
     private void drawVelocity(Graphics2D g2){
         g2.setColor(Color.WHITE);
-        g2.setFont(events.getGame().getAssets().getFont1());
+        g2.setFont(assets.getFont1());
 
         String velocityText = "Velocity - " + events.getVelocityDisplay();
         g2.drawString(velocityText, 680, 50);
@@ -330,7 +342,7 @@ public class GamePanel extends JPanel implements Game.GameListener{
         g2.fillRect(0, 0, GameConstants.SCREEN_WIDTH, GameConstants.SCREEN_HEIGHT);
 
         //Ícone de pause.
-        Image pauseIcon = events.getGame().getAssets().getPauseIcon();
+        Image pauseIcon = assets.getPauseIcon();
         if(pauseIcon != null){
             int iconSize = 200;
             int x = (GameConstants.SCREEN_WIDTH - iconSize) / 2;

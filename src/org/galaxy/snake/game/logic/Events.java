@@ -31,7 +31,7 @@ public class Events implements KeyListener
     {
         this.game = game;
         boostActive = false;
-        currentDelay = GameConstants.NORMAL_SPEED;
+        currentDelay = GameConstants.TIMER_SNAKE_NORMAL;
 
         //Timer para controlar duração do boost.
         //Dispara uma vez após BOOST_DURATION milissegundo.
@@ -148,7 +148,7 @@ public class Events implements KeyListener
      */
     private void handleBoostEnd(ActionEvent e){
         boostActive = false;
-        currentDelay = GameConstants.NORMAL_SPEED;
+        currentDelay = GameConstants.TIMER_SNAKE_NORMAL;
     }
 
     /**

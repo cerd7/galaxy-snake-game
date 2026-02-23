@@ -1,6 +1,9 @@
 package org.galaxy.snake.game.logic;
+import java.util.Collections;
 import java.util.List;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.galaxy.snake.game.core.GameConstants;
 
@@ -15,13 +18,18 @@ import org.galaxy.snake.game.core.GameConstants;
  */
 public class Nave 
 {
+    //<=== LOG -  mais eficiente e personalizável ===>
+    private static final Logger LOGGER = Logger.getLogger(Nave.class.getName());
+
     //<=== ATRIBUTOS ===>
     final private Tile position; //Posição atual da nava.
-    final private Random random; //Gerador de números aleatórios.
 
     //Constantes locais para cálculo de spawn.
     private static final int MARGIN_TILES = 2; //Margem das bordas em riles.
     private static final int MAX_SPAWN_ATTEMPTS = 100; //Limites de tentativas.
+
+    //Número de Tile ocupados pela nave.
+    private static final int NAVE_TILES = (GameConstants.NAVE_TILE_SIZE / GameConstants.TILE_SIZE) + 1;
 
     /**
      * Construtor inicializa a nave com posição inicial.
@@ -34,74 +42,71 @@ public class Nave
             GameConstants.NAVE_TILE_SIZE,
             GameConstants.NAVE_TILE_SIZE   
         );
-        random = new Random();
     }
 
     /**
-     * Posiciona a nave em um local aleatório válido.
-     * Versão simples que não verifica a posição da cobra.
-     * 
-     * Garante que a nave não apareça:
-     * -No painel superior.
-     * -Parcialmente fora da tela.
+     * Posiciona a nave em um local aleatório e válido.
+     * Delega para o método com lista vazia quando não há posições para evitar.
      */
-    public void place()
-    {
-        //Calcula limites considerando o tamanho da nave.
-        int naveTiles = (GameConstants.NAVE_TILE_SIZE / GameConstants.TILE_SIZE) + 1;
-        int maxX = GameConstants.MAX_TILES_X - naveTiles - MARGIN_TILES;
-        int maxY = GameConstants.MAX_TILES_Y - naveTiles - MARGIN_TILES;
-        int minY = GameConstants.NAVE_MIN_Y_SPAWN;
-
-        //Gera posições aleatórias dentro dos limites válidos.
-        position.setX(MARGIN_TILES + random.nextInt(maxX - MARGIN_TILES));
-        position.setY(minY + random.nextInt(maxY - minY));
+    public void place(){
+        place(Collections.emptyList());
     }
 
     /**
      * Posiciona a nave em um local aleatório evitando posições ocupadas.
-     * Esta versão recebe a lista de tiles ocupados pela cobra.
      * 
-     * @param occupiedPositions Lista de tiles onde a nave NÃO pode spawnar.
+     * Garante que a nave não apareça:
+     * -No painel superior (HUD)
+     * -Parcialmente fora da tela.
+     * -Sobre posições ocupadas pela cobra.
+     * 
+     * @param occupiedPositions Lista de tiles onde a nave não pode spawnar,
+     *                          Pode ser vazia, mas não null.
      */
-    public void place(List<Tile> occupiedPositions){
-        //Se não há posições para evitar, usa o método simples
-        if(occupiedPositions == null || occupiedPositions.isEmpty()){
-            place();
+    public void place(List<Tile> occupiedPositions)
+    {
+        //Trata o null como lista vazia para robustez.
+        if (occupiedPositions == null) {
+            occupiedPositions = Collections.emptyList();
+        }
+
+        //Calcula limites considerando o tamanho da nave.
+        int maxX = GameConstants.MAX_TILES_X - NAVE_TILES - MARGIN_TILES;
+        int maxY = GameConstants.MAX_TILES_Y - NAVE_TILES - MARGIN_TILES;
+        int minY = GameConstants.NAVE_MIN_Y_SPAWN;
+
+        // Validação de segurança para evitar IllegalArgumentException no nextInt.
+        int rangeX = maxX - MARGIN_TILES;
+        int rangeY = maxY - minY;
+        if (rangeX <= 0 || rangeY <= 0) {
+            LOGGER.log(Level.WARNING, "Área de spawn inválida: rengeX={0}, rangeY={1}",
+                new Object[]{rangeX, rangeY}
+            );
             return;
         }
 
-        //Calcula limites considerando o tamanho da nave
-        int naveTiles = (GameConstants.NAVE_TILE_SIZE / GameConstants.TILE_SIZE) + 1;
-        int maxX = GameConstants.MAX_TILES_X - naveTiles - MARGIN_TILES;
-        int maxY = GameConstants.MAX_TILES_Y - naveTiles - MARGIN_TILES;
-        int minY = GameConstants.NAVE_MIN_Y_SPAWN;
-
-        //Tenta encontrar posições válidas.
+        ThreadLocalRandom random = ThreadLocalRandom.current();
         int attempts = 0;
         boolean validPosition;
 
         do{
-            //Gera posições candidata
-            position.setX(MARGIN_TILES + random.nextInt(maxX - MARGIN_TILES));
-            position.setY(minY + random.nextInt(maxY - minY));
+            //Gera posições aleatórias.
+            position.setX(MARGIN_TILES + random.nextInt(rangeX));
+            position.setY(minY + random.nextInt(rangeY));
 
-            //Verifica se não colide com nenhuma posição ocupada
+            //Verifica se não colide com nenhuma posição ocupada.
             validPosition = true;
             for(Tile occupied : occupiedPositions){
-                if (isOverlapping(occupied)) {
+                if(isOverlapping(occupied)){
                     validPosition = false;
                     break;
                 }
             }
             attempts++;
-            //Evita loop infinito se a cobra ocupar quase tudo.
-        }while(!validPosition && attempts < MAX_SPAWN_ATTEMPTS);
+        } while(!validPosition && attempts < MAX_SPAWN_ATTEMPTS);
 
-        //Se não encontrou posição válida após muitas tentativas,
-        //usa a última posição gerada (melhor que travar).
-        if(!validPosition){
-            System.err.println("Aviso: Não foi possível encontrar posição ideal para a nave");
+        if (!validPosition) {
+            LOGGER.log(Level.FINE, "Não encontrou posição ideal para a nave após {0} tentativas", attempts);
         }
     }
 
@@ -109,30 +114,30 @@ public class Nave
      * Verifica se a nave sobrepõe um tile específico.
      * Considera a área expandida da nave (pois ela é maior que um tile).
      * 
-     * @param Tile a verificar.
+     * @param tile Tile a verificar.
      * @return true se houver sobreposição.
      */
-    private boolean isOverlapping(Tile tile){
-        //Calcula a área ocupada pela nave em tiles
-        int naveTiles = (GameConstants.NAVE_TILE_SIZE / GameConstants.TILE_SIZE) + 1;
+    private boolean isOverlapping(Tile tile) {
+        int naveRight = position.getX() + NAVE_TILES;
+        int naveBottom = position.getY() + NAVE_TILES;
 
-        //Verifica se o tile está dentro da área da nave
-        int naveRight = position.getX() + naveTiles;
-        int naveBottom = position.getY() + naveTiles;
-
-        return tile.getX() >= position.getX() && tile.getX() < naveRight &&
-               tile.getY() >= position.getY() && tile.getY() < naveBottom;
+        return tile.getX() >= position.getX() && tile.getX() < naveRight
+            && tile.getY() >= position.getY() && tile.getY() < naveBottom;
     }
 
     /**
-     * Reseta a nave para a posição 
+     * Reseta a nave para a posição inicial definida em GameConstants.
      */
-    public void reset(){
+    public void reset() {
         position.setPosition(GameConstants.NAVE_START_X, GameConstants.NAVE_START_Y);
     }
 
-    public Tile getPosition() 
-    {                                                                     
+    /**
+     * Retorna a posição atual da nave.
+     * 
+     * @return Tile representando a posição.
+     */
+    public Tile getPosition() {                                                                     
         return position;
     }
 }

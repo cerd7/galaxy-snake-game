@@ -13,8 +13,8 @@ import java.util.Objects;
 public class Tile {
     private int x; //Posição do eixo X no grid (não em pixels)
     private int y; //Posição do eixo Y no grid (não em pixels)
-    private int width; //Largura em pixels
-    private int height; //Altura em pixels
+    private final int width; //Largura em pixels
+    private final int height; //Altura em pixels
 
     /**
      * Construtor cria um tile com posições e dimensões
@@ -25,6 +25,12 @@ public class Tile {
      * @param height Altura em pixels
      */
     public Tile(int x, int y, int width, int height) {
+        if (width < 0 || height < 0) {
+            throw new IllegalArgumentException(
+                String.format("Dimensões devem ser não-negativas: width=%d, height=%d", width, height)
+            );
+        }
+
         this.x = x;
         this.y = y;
         this.width = width;
@@ -38,6 +44,7 @@ public class Tile {
      * @param other Tile a ser copiado
      */
     public Tile(Tile other){
+        Objects.requireNonNull(other, "Tile copiado não pode ser null");
         this.x = other.x;
         this.y = other.y;
         this.width = other.width;
@@ -86,6 +93,11 @@ public class Tile {
      * @returntrue se houver sobreposição.
      */
     public boolean collidesWith(Tile other, int tileSize){
+        Objects.requireNonNull(other, "Tile para colisão não pode ser null");
+        if (tileSize < 0) {
+            throw new IllegalArgumentException("tileSize deve ser positivo: " + tileSize);
+        }
+
         //Calcula os limites deste tile em pixels
         int thisLeft = this.x * tileSize;
         int thisTop = this.y * tileSize;
@@ -130,7 +142,7 @@ public class Tile {
     /**
      * Representação em String para debug.
      * 
-     * @return String no formato "Tile[x=?, y=?, w=?. h=?]"
+     * @return String no formato "Tile[x=?, y=?, w=?, h=?]"
      */
     @Override
     public String toString() {
@@ -197,21 +209,5 @@ public class Tile {
     public void setPosition(int x, int y){
         this.x = x;
         this.y = y;
-    }
-
-    /**
-     * Define largura em pixels.
-     * @param width Nova largura.
-     */
-    public void setWidth(int width){
-        this.width = width;
-    }
-
-    /**
-     * Define a altura em pixels.
-     * @param height Nova altura.
-     */
-    public void setHeight(int height){
-        this.height = height;
     }
 }

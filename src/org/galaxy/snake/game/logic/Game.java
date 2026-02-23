@@ -1,7 +1,6 @@
 package org.galaxy.snake.game.logic;
 
 import org.galaxy.snake.game.core.GameConstants;
-import org.galaxy.snake.game.ui.Assets;
 
 /**
  * Classe principal que gerencia a lógica do jogo.
@@ -19,7 +18,6 @@ public class Game
     //<=== COMPONENTES DO JOGO ===>
     private final Snake snake;
     private final Nave nave;
-    private final Assets assets;
     private final Sounds sounds;
 
     //<=== ESTADO DO JOGO ===>
@@ -37,6 +35,7 @@ public class Game
         void onGameReset();
         void onRequestRestart();
         void onRequestExit();
+        void onScoreChanged(int score);
     }
 
     /**
@@ -46,7 +45,6 @@ public class Game
     public Game(){
         //Usa Singleton instance
         sounds = Sounds.getInstance();
-        assets = Assets.getInstance();
 
         //Cria novos objetos de jogo
         snake = new Snake();
@@ -87,7 +85,7 @@ public class Game
         if(gameOver){
             return;
         }
-        updateBackgroundByScore();
+        notifyScoreChanged();
         checkAllCollisions();
     }
 
@@ -109,9 +107,10 @@ public class Game
     /**
      * Atualiza o background baseado na pontuação atual.
      */
-    private void updateBackgroundByScore(){
-        int score = snake.getScore();
-        assets.updateBackgroundByScore(score);
+    private void notifyScoreChanged(){
+        if (gameListener != null) {
+            gameListener.onScoreChanged(snake.getScore());
+        }
     }
 
     /**
@@ -223,9 +222,6 @@ public class Game
         //Reseta a nave.
         nave.reset();
 
-        //Reseta o background.
-        assets.resetBackground();
-
         //Reseta estado do jogo.
         gameOver = false;
         gameOverHandled = false;
@@ -233,7 +229,7 @@ public class Game
         //Reinicia a música.
         sounds.playBackgroundMusic();
 
-        //Notifica a UI.
+        //Notifica a UI para reiniciar timers e estado visual.
         if (gameListener != null) {
             gameListener.onGameReset();
         }
@@ -246,10 +242,6 @@ public class Game
 
     public Nave getNave(){
         return nave;
-    }
-
-    public Assets getAssets(){
-        return assets;
     }
 
     public Sounds getSounds(){

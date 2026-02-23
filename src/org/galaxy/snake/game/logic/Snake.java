@@ -22,7 +22,7 @@ public class Snake
     final private ArrayList<Tile> body; //Corpo (lista de segmentos)
     private int velocityX; //Direção horizontal (-1,0,1)
     private int velocityY; //Direção vertical (-1,0,1)
-    private Tile lasTailPosition; //Marca a ultima posição da calda.
+    private Tile lastTailPosition; //Marca a ultima posição da cauda.
 
     /**
      * Construtor inicializa a cobra na posição inicial.
@@ -38,7 +38,7 @@ public class Snake
         );
         //Inicializa lista vazia para o corpo.
         body = new ArrayList<>();
-        lasTailPosition = new Tile(head);
+        lastTailPosition = new Tile(head);
         
         //Velocidade 0 = cobra inicia parada.
         velocityX = 0;
@@ -64,9 +64,9 @@ public class Snake
 
         //Salva a posição da cauda antes de se mover.
         if(!body.isEmpty()){
-            lasTailPosition = new Tile(body.get(body.size() - 1));
+            lastTailPosition = new Tile(body.get(body.size() - 1));
         }else{
-            lasTailPosition = new Tile(head);
+            lastTailPosition = new Tile(head);
         }
 
         /**
@@ -100,7 +100,7 @@ public class Snake
      */
     public void grow(){
         //Adiciona ao final do corpo o novo segmento.
-        body.add(new Tile(lasTailPosition));
+        body.add(new Tile(lastTailPosition));
     }
 
     /**
@@ -115,23 +115,37 @@ public class Snake
         body.clear();
 
         //Reposiciona a cabeça.
-        lasTailPosition = new Tile(head);
+        head.setPosition(GameConstants.SNAKE_START_X, GameConstants.SNAKE_START_Y);
+        lastTailPosition = new Tile(head);
     }
 
     /**
-     * Retorna lista com todas as posições ocupadas pela cobra.
-     * Inclui a cabeça e todos os segmentos do corpo.
+     * Retorna lista com todas as posições ocupadas pelo corpo da cobra.
+     * Não inclui a cabeça (a cabeça é obtida através do {@link #gethead()}).
      * 
+     * Retorna uma lista imutável de cópias para evitar modificações externas.
      * 
      * @return Lista imutável de tiles ocupados.
      */
     public List<Tile> getOccupiedPositions(){
         List<Tile> positions = new ArrayList<>();
 
-        //Adiciona a cabeça.
-        positions.add(head.copy());
-
         //adiciona cada segmento do corpo
+        for(Tile segment : body){
+            positions.add(segment.copy());
+        }
+        return Collections.unmodifiableList(positions);
+    }
+
+    /**
+     * Retorna lista com TODAS as posições ocupadas (cabeça + corpo).
+     * Usado para verificar colisão no spawn da nave.
+     * 
+     * @return Lista imutável de todos os tiles ocupados.
+     */
+    public List<Tile> getAllOcupiedPositions(){
+        List<Tile> positions = new ArrayList<>(body.size() + 1);
+        positions.add(head.copy());
         for(Tile segment : body){
             positions.add(segment.copy());
         }
@@ -147,13 +161,15 @@ public class Snake
         return velocityX != 0 || velocityY != 0; 
     }
 
+    //<=== GETTERS ===>
+    
     /**
      * Retorna o tamanho total da cobra (cabeça + corpo).
      * 
      * @return Número total de segmentos.
      */
     public int getSize(){
-        return 1 + body.size();// 1 da cabeça + qty do corpo.
+        return body.size() + 1;// Qty do corpo + 1 da cabeça.
     }
 
     /**
@@ -165,39 +181,21 @@ public class Snake
         return body.size();
     }
 
-    //<=== GETTERS E SETTERS ===>
-
-    /**
-     * Define uma nova cabeça para a cobra.
-     * @param newHead Novo tile para a cabeça
-     */
-    public void setHead(Tile newHead) {
-        this.head = newHead;
-    }
-
     /**
      * Retorna a cabeça da cobra.
+     * Nota: retorna a referência direta para performance na renderização.
+     * Não modifica as dimensões (são final no Tile).
+     * 
      * @return Tile da cabeça
      */
     public Tile getHead() {
         return head;
     }
-
-    /**
-    * Retorna a lista do corpo.
-    * NOTA: Retorna a referência direta para compatibilidade.
-    * Prefira usar getOccupiedPositions() para leitura segura.
-    * 
-    * @return ArrayList do corpo
-    */
-    public ArrayList<Tile> getBody() {
-        return body;
-    }
     
     /**
      * Retorna uma visão somente-leitura do corpo.
      * 
-     * @return Lista imutável dos segmentos
+     * @return Lista imutável dos segmentos (referências diretas para a renderização).
      */
     public List<Tile> getBodyReadOnly() {
         return Collections.unmodifiableList(body);
@@ -212,19 +210,21 @@ public class Snake
     }
 
     /**
-     * Define velocidade no eixo X.
-     * @param velocityX Nova velocidade (-1, 0, ou 1)
-     */
-    public void setVelocityX(int velocityX) {
-        this.velocityX = velocityX;
-    }
-
-    /**
      * Retorna velocidade no eixo Y.
      * @return -1 (cima), 0 (parado), ou 1 (baixo)
      */
     public int getVelocityY() {
         return velocityY;
+    }
+
+    //<=== SETTERS ===>
+
+    /**
+     * Define velocidade no eixo X.
+     * @param velocityX Nova velocidade (-1, 0, ou 1)
+     */
+    public void setVelocityX(int velocityX) {
+        this.velocityX = velocityX;
     }
 
     /**
@@ -241,7 +241,17 @@ public class Snake
      * @param vy Velocidade Y
      */
     public void setVelocity(int vx, int vy) {
-        this.velocityX = vx;
-        this.velocityY = vy;
+        this.velocityX = clampVelocity(vx);
+        this.velocityY = clampVelocity(vy);
+    }
+
+    /**
+     * Limita a velocidade ao renge [-1, 1].
+     * 
+     * @param v Valor de velocidade.
+     * @return Velor clamped.
+     */
+    private static int clampVelocity(int v){
+        return Math.max(-1, Math.min(1, v));
     }
 }

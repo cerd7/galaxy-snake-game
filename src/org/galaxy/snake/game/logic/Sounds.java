@@ -24,7 +24,7 @@ import org.galaxy.snake.game.core.GameConstants;
  */
 
 public class Sounds{
-    //Log mais eficiente e personalizável.
+    //<=== LOG -  mais eficiente e personalizável ===>
     private static final Logger LOGGER = Logger.getLogger(Sounds.class.getName());
 
     // <=== SINGLETON PATTERN (Thread-Safe) ===>
@@ -96,7 +96,7 @@ public class Sounds{
         {
             // Verifica se o arquivo existe antes de tentar carregar.
             if (resourceStream == null) {
-                LOGGER.log(Level.WARNING, "Arquivo de áudio não encontrado: {0}" + filePath);
+                LOGGER.log(Level.WARNING, "Arquivo de áudio não encontrado: {0}", filePath);
                 return;
             }
             try(
@@ -117,11 +117,11 @@ public class Sounds{
                 clips.put(type, clip);
             }
         }catch(UnsupportedAudioFileException e){
-            LOGGER.log(Level.WARNING,"Formato de áudio não suportado: {0}" + filePath);
+            LOGGER.log(Level.WARNING,"Formato de áudio não suportado: {0}", filePath);
         }catch(IOException e){
-            LOGGER.log(Level.WARNING,"Erro de I/O ao carregar áudio: {0} " + filePath);
+            LOGGER.log(Level.WARNING,"Erro de I/O ao carregar áudio: {0} ", filePath);
         }catch(LineUnavailableException e){
-            LOGGER.log(Level.WARNING,"Linha de áudio não disponível: {0}" + filePath);
+            LOGGER.log(Level.WARNING,"Linha de áudio não disponível: {0}", filePath);
         }
     }
 

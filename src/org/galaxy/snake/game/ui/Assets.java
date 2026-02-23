@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.swing.*;
 
@@ -23,6 +25,8 @@ import javax.swing.*;
 
 public class Assets 
 {
+    //<=== LOG -  mais eficiente e personalizável ===>
+    private static final Logger LOGGER = Logger.getLogger(Assets.class.getName());
 
     //<=== SINGLETON PATTERN ===>
     private static volatile Assets instance;
@@ -131,12 +135,12 @@ public class Assets
         try{
             java.net.URL url = getClass().getResource(path);
             if (url == null) {
-                System.err.println("Imagem não encontrada: " + path);
+                LOGGER.log(Level.WARNING, "Imagem não encontrada: {0}", path);
                 return createPlaceholder();
             }
             return new ImageIcon(url).getImage();
         }catch(Exception e){
-            System.err.println("Erro ao carregar a imagem " + path + e.getMessage());
+            LOGGER.log(Level.WARNING, "Imagem não encontrada: {0}", new Object[]{path, e});
             return createPlaceholder();
         }
     }
@@ -181,7 +185,7 @@ public class Assets
         try(InputStream fontStream = getClass().getResourceAsStream(GameConstants.FONT_PATH))
         {
             if(fontStream == null){
-                System.err.println("Arquivo de fonte não encontrado: " + GameConstants.FONT_PATH);
+                LOGGER.log(Level.WARNING, "Fonte não encontrada: {0}", GameConstants.FONT_PATH);
                 useFallBackFonts();
                 return;
             }
@@ -198,7 +202,7 @@ public class Assets
             font2 = baseFont.deriveFont(18f);
 
         }catch(IOException | FontFormatException e){
-            System.err.println("Erro ao carregar fonte customizada: " + e.getMessage());
+            LOGGER.log(Level.WARNING, "Erro ao carregar fonte customizada: {0}" + e.getMessage());
             useFallBackFonts();
         }
     }
@@ -294,7 +298,7 @@ public class Assets
             instance = null;
         }
 
-        System.out.println("Assets: Recursos liberados com sucesso!");
+        LOGGER.log(Level.INFO, "Assets: Recursos liberados com sucesso!");
     }
 
     /**
